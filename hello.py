@@ -12,3 +12,19 @@ response = requests.get(url,timeout=10)
 data = response.json()
 
 print(data)
+
+from dotenv import load_dotenv
+import os
+
+# Load the .env file
+load_dotenv(r"D:\pythonProj\python-for-ai\sales-analysis\data\.env")
+
+# Now use your variables
+api_key = os.environ.get('API_KEY')
+debug = os.environ.get('DEBUG')
+database = os.environ.get('DATABASE_URL')
+print(f"API Key: {api_key}")
+print(f"Debug mode: {debug}")
+print(f"Database URL: {database}")
+
+print(f"using api_key: {api_key}")
