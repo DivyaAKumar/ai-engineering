@@ -13,8 +13,9 @@ data = response.json()
 
 print(data)
 
-from dotenv import load_dotenv
 import os
+
+from dotenv import load_dotenv
 
 # Load the .env file
 load_dotenv(r"D:\pythonProj\python-for-ai\sales-analysis\data\.env")
