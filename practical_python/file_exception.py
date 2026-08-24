@@ -26,3 +26,13 @@ try:
 
 except FileNotFoundError:
     print("File not found.")
+
+from pathlib import Path
+
+file_path = Path("user.txt")
+
+name = input("Enter your name: ")
+
+file_path.write_text(name, encoding="utf-8")
+
+print("Name saved.")
