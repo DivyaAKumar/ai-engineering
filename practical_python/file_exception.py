@@ -35,4 +35,4 @@ name = input("Enter your name: ")
 
 file_path.write_text(name, encoding="utf-8")
 
-print("Name saved.")
+print("Name saved")
