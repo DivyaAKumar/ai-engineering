@@ -1,7 +1,7 @@
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
-
+from langchain_core.output_parsers import StrOutputParser
 load_dotenv("../../LangChainModels/.env")
 
 
@@ -19,12 +19,10 @@ template2 = PromptTemplate(
     input_var = ['text']
 )
 
-prompt1 = template1.invoke({'topic': 'black hole'})
+parser = StrOutputParser()
 
-result = model.invoke(prompt1)
+chain = template1 | model | parser | template2 | model | parser
 
-prompt2 = template2.invoke({'text': result.content})
+result= chain.invoke({'topic': 'black hole'})
 
-final_result = model.invoke(prompt2)
-
-print(final_result.content)
+print(result)
