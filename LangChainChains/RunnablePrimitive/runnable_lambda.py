@@ -6,7 +6,7 @@ from langchain_core.runnables import RunnableSequence, RunnableParallel, Runnabl
 load_dotenv('../../LangChainModels/.env')
 
 #def word_count(text):
-#    return len(text.split())
+#   return len(text.split())
 
 prompt = PromptTemplate(
     template='write a joke on {topic}',
