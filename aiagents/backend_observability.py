@@ -1,19 +1,18 @@
 from langgraph.graph import StateGraph, START, END
-from typing import TypedDict,  Annotated
+from typing import TypedDict, Literal, Annotated
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import BaseMessage,HumanMessage
 from pydantic import BaseModel
 from IPython.display import Image
 from langgraph.graph.message import add_messages
 from langgraph.checkpoint.sqlite import SqliteSaver
+import uuid
 from dotenv import load_dotenv
 import sqlite3
+import os
 
-from langgraph.prebuilt import ToolNode, tools_condition
-from langchain_community.tools import DuckDuckGoSearchRun
-from langchain_core.tools import tool
-import requests
-import random
+os.environ["LANGSMITH_TRACING"] = "true"
+os.environ['LANGCHAIN_PROJECT'] = 'Chatbot'
 
 load_dotenv("../LangChainModels/.env")
 
@@ -29,7 +28,6 @@ def chat_node(state: ChatState) -> ChatState:
         'messages': [response]
         }
 
-
 conn = sqlite3.connect(database = 'chatbot.db', check_same_thread= False)#true me error as sqlite server works on single thread
 checkpointer = SqliteSaver(conn=conn)
 
@@ -42,6 +40,7 @@ graph.add_edge(START, 'chat_node')
 graph.add_edge('chat_node', END)
 
 chatbot = graph.compile(checkpointer=checkpointer)
+
 def extract_threads():
     all_threads = set()
     #to extract number of threads already present in db
