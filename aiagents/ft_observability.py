@@ -1,22 +1,26 @@
 import streamlit as st
-from backend_observability import chatbot, extract_threads
+from bk_tools import chatbot, extract_threads
 from langchain_core.messages import HumanMessage, AIMessage
 import uuid
 from dotenv import load_dotenv
-from langsmith import traceable
+
 
 load_dotenv("../LangChainModels/.env")
 
+
 def generate_thread_id():
     return str(uuid.uuid4())
+
 
 def reset_chat():
     st.session_state["thread_id"] = generate_thread_id()
     st.session_state["message_history"] = []
 
+
 def add_thread(thread_id):
     if thread_id not in st.session_state["chat_threads"]:
         st.session_state["chat_threads"].append(thread_id)
+
 
 def load_convo(thread_id):
     return chatbot.get_state(
@@ -26,6 +30,7 @@ def load_convo(thread_id):
             }
         }
     ).values.get("messages", [])
+
 
 def generate_title(messages):
     for message in messages:
@@ -37,6 +42,10 @@ def generate_title(messages):
 
     return "New Chat"
 
+
+# -----------------------------
+# SESSION STATE
+# -----------------------------
 
 if "thread_id" not in st.session_state:
     st.session_state["thread_id"] = generate_thread_id()
@@ -55,9 +64,12 @@ st.session_state["chat_threads"] = [
 ]
 
 
-
+# -----------------------------
+# SIDEBAR
+# -----------------------------
 
 st.sidebar.title("langGraph Chatbot")
+
 
 if st.sidebar.button("New Chat"):
     reset_chat()
@@ -65,6 +77,7 @@ if st.sidebar.button("New Chat"):
 
 
 st.sidebar.header("Recent Conversations")
+
 
 for thread_id in st.session_state["chat_threads"][::-1]:
 
@@ -98,11 +111,19 @@ for thread_id in st.session_state["chat_threads"][::-1]:
         st.rerun()
 
 
+# -----------------------------
+# DISPLAY CHAT HISTORY
+# -----------------------------
+
 for message in st.session_state["message_history"]:
 
     with st.chat_message(message["role"]):
         st.text(message["content"])
 
+
+# -----------------------------
+# CHAT INPUT
+# -----------------------------
 
 user_input = st.chat_input("Type here")
 
@@ -111,9 +132,16 @@ config = {
     "configurable": {
         "thread_id": st.session_state["thread_id"]
     },
-    'metadata': {'thread_id': st.session_state['thread_id']},
-    'run_name': 'chat_turn'
+    "metadata": {
+        "thread_id": st.session_state["thread_id"]
+    },
+    "run_name": "chat_turn"
 }
+
+
+# -----------------------------
+# CHAT PROCESSING
+# -----------------------------
 
 if user_input:
 
@@ -138,18 +166,46 @@ if user_input:
 
     with st.chat_message("assistant"):
 
-        ai_message = st.write_stream(
-            message_chunk.content
-            for message_chunk, metadata in chatbot.stream(
-                {
-                    "messages": [
-                        HumanMessage(content=user_input)
-                    ]
-                },
-                config=config,
-                stream_mode="messages"
+        # Status container
+        with st.status("Thinking...", expanded=True) as status:
+
+            def ai_only_stream():
+
+                tool_used = False
+
+                for message_chunk, metadata in chatbot.stream(
+                    {
+                        "messages": [
+                            HumanMessage(content=user_input)
+                        ]
+                    },
+                    config=config,
+                    stream_mode="messages"
+                ):
+
+                    # Get the node that produced this message
+                    node = metadata.get("langgraph_node")
+
+                    # Tool execution
+                    if node == "tools":
+                        if not tool_used:
+                            status.write("Using tool...")
+                            tool_used = True
+
+                    # AI response
+                    if isinstance(message_chunk, AIMessage):
+
+                        if message_chunk.content:
+                            yield message_chunk.content
+
+
+            ai_message = st.write_stream(ai_only_stream())
+
+            status.update(
+                label="Completed",
+                state="complete",
+                expanded=False
             )
-        )
 
 
     st.session_state["message_history"].append({
